@@ -20,13 +20,27 @@ sns.set_palette("husl")
 csv_path = "dataset/creditcard.csv"
 
 def run_fraud_detection():
-    # --- 2. VERİ YÜKLEME ---
+    # --- 2. VERİ YÜKLEME (KaggleHub ile) ---
     print("--- 2. Veri Yükleme ---")
-    if not os.path.exists(csv_path):
-        print(f"Hata: {csv_path} bulunamadı!")
-        return
+    import kagglehub
+    
+    # Dataset'in en son versiyonunu indir
+    path = kagglehub.dataset_download("mlg-ulb/creditcardfraud")
+    print("Veri seti yolu:", path)
+    
+    # İndirilen klasör içindeki csv dosyasını bul (genellikle creditcard.csv)
+    csv_file = os.path.join(path, "creditcard.csv")
+    
+    if not os.path.exists(csv_file):
+        # Eğer klasör içindeyse veya farklı bir isimdeyse alternatif kontrol
+        files = [f for f in os.listdir(path) if f.endswith('.csv')]
+        if files:
+            csv_file = os.path.join(path, files[0])
+        else:
+            print(f"Hata: {path} içinde CSV dosyası bulunamadı!")
+            return
 
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_file)
     print(f"Veri seti yüklendi. Orijinal Satır/Sütun: {df.shape}")
 
     # Overfitting Önlemi: Yinelenen satırları kontrol et ve temizle
@@ -144,11 +158,6 @@ def run_fraud_detection():
     })
     print("\nFinal Test Sonuçları:")
     print(results.to_markdown(index=False))
-
-    # --- 10. MODEL KAYDETME ---
-    best_model = rf_model if rf_ap > lr_ap else lr_model
-    joblib.dump(best_model, 'best_model.pkl')
-    print(f"\nEn iyi model kaydedildi. (AP kriterine göre)")
 
 if __name__ == "__main__":
     run_fraud_detection()
